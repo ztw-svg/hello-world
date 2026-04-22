@@ -1,0 +1,7 @@
+period,version,scenario,org_id,account_code,module,product_id,customer_id,project_id,currency,amount_type,budget_amount,actual_amount,qty,unit_price,remark
+2026-01,BUDGET,BASE,CN01,4001,收入,P001,C001,PRJ001,CNY,含税,1200000,0,10000,120,利润表预算
+2026-01,ACTUAL,BASE,CN01,4001,收入,P001,C001,PRJ001,CNY,含税,0,1180000,9800,120.41,利润表实际
+2026-01,BUDGET,BASE,CN01,6401,成本,P001,C001,PRJ001,CNY,不含税,700000,0,10000,70,利润表预算
+2026-01,ACTUAL,BASE,CN01,6401,成本,P001,C001,PRJ001,CNY,不含税,0,735000,9800,75,利润表实际
+2026-01,BUDGET,BASE,CN01,6601,费用,,,,CNY,不含税,180000,0,,,利润表预算
+2026-01,ACTUAL,BASE,CN01,6601,费用,,,,CNY,不含税,0,205000,,,利润表实际

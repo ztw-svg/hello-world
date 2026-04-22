@@ -1,0 +1,5 @@
+period,version,scenario,org_id,equity_item,budget_begin,budget_change,budget_end,actual_begin,actual_change,actual_end,remark
+2026-01,BUDGET,BASE,CN01,实收资本,800000,0,800000,0,0,0,权益预算
+2026-01,ACTUAL,BASE,CN01,实收资本,800000,0,800000,800000,0,800000,权益实际
+2026-01,BUDGET,BASE,CN01,未分配利润,420000,120000,540000,0,0,0,权益预算
+2026-01,ACTUAL,BASE,CN01,未分配利润,410000,98000,508000,410000,98000,508000,权益实际

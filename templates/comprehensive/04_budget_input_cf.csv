@@ -1,0 +1,7 @@
+period,version,scenario,org_id,cashflow_type,cashflow_item,budget_amount,actual_amount,remark
+2026-01,BUDGET,BASE,CN01,经营活动,销售商品收到的现金,1350000,0,现金流预算
+2026-01,ACTUAL,BASE,CN01,经营活动,销售商品收到的现金,0,1290000,现金流实际
+2026-01,BUDGET,BASE,CN01,经营活动,购买商品支付的现金,820000,0,现金流预算
+2026-01,ACTUAL,BASE,CN01,经营活动,购买商品支付的现金,0,880000,现金流实际
+2026-01,BUDGET,BASE,CN01,投资活动,购建固定资产支付的现金,150000,0,现金流预算
+2026-01,ACTUAL,BASE,CN01,投资活动,购建固定资产支付的现金,0,165000,现金流实际

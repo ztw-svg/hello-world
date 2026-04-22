@@ -118,3 +118,44 @@ python3 pkb_workflow.py import-dir ~/Downloads/notebooklm-exports --move
 - 目前的“实体抽取/摘要”是启发式（轻量、零依赖）。
 - 生产版建议把 `summarize()` / `extract_entities()` 替换为你常用 LLM API。
 - 也可对接 Obsidian（把该目录当 Vault 打开）获得图谱浏览体验。
+
+---
+
+## 5) Google AI Pro 用户推荐方案（Gemini + Drive）
+
+如果你已经有 Google AI Pro，希望使用 Google 生态来跑知识库，可以用仓库里的：
+
+```bash
+google_pkb_workflow.py
+```
+
+这个版本支持：
+- 用 Gemini API 生成更好的摘要和实体（有 `GEMINI_API_KEY` 时）
+- 无 key 时自动回退到本地启发式算法
+- 把 `--root` 指到 Google Drive 同步目录，实现“云端存储 + 本地运行”
+
+### 快速开始
+
+```bash
+# 1) 初始化（可把目录放进 Google Drive）
+python3 google_pkb_workflow.py --root ~/GoogleDrive/my-pkb init
+
+# 2) 摄入文档
+python3 google_pkb_workflow.py \
+  --root ~/GoogleDrive/my-pkb \
+  --api-key "$GEMINI_API_KEY" \
+  ingest ~/Downloads/note.md --title "我的笔记"
+
+# 3) 基于 wiki 回答问题，并把回答落盘到 wiki/answers/
+python3 google_pkb_workflow.py \
+  --root ~/GoogleDrive/my-pkb \
+  --api-key "$GEMINI_API_KEY" \
+  answer "这周项目里关于检索质量优化的结论是什么？"
+```
+
+### 建议的 Google 工作流
+
+1. 在 NotebookLM / Google Docs / 网页里整理资料。  
+2. 导出为 txt/md 到本地目录。  
+3. 用 `google_pkb_workflow.py ingest` 持续编译进 wiki。  
+4. 用 `answer` 做问答沉淀，形成 `wiki/answers/`。  

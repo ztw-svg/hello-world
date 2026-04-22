@@ -1,0 +1,7 @@
+period,version,scenario,org_id,org_name,account_code,account_name,module,product_id,product_name,customer_id,customer_name,project_id,currency,amount_type,budget_amount,actual_amount,qty,unit_price,owner,remark
+2026-01,BUDGET,BASE,CN01,华东事业部,6001,主营业务收入,收入,P001,A产品,C001,客户A,PRJ001,CNY,含税,1200000,0,10000,120,张三,年度预算初稿
+2026-01,ACTUAL,BASE,CN01,华东事业部,6001,主营业务收入,收入,P001,A产品,C001,客户A,PRJ001,CNY,含税,0,1180000,9800,120.41,张三,月结锁数
+2026-01,BUDGET,BASE,CN01,华东事业部,6401,主营业务成本,成本,P001,A产品,C001,客户A,PRJ001,CNY,不含税,700000,0,10000,70,李四,年度预算初稿
+2026-01,ACTUAL,BASE,CN01,华东事业部,6401,主营业务成本,成本,P001,A产品,C001,客户A,PRJ001,CNY,不含税,0,735000,9800,75,李四,月结锁数
+2026-01,BUDGET,BASE,CN01,华东事业部,6601,销售费用,费用,,,,,,CNY,不含税,180000,0,,,王五,年度预算初稿
+2026-01,ACTUAL,BASE,CN01,华东事业部,6601,销售费用,费用,,,,,,CNY,不含税,0,205000,,,王五,月结锁数

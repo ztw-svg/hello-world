@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 from transcriber_tool.config import AppConfig
+from transcriber_tool.diarization import DiarizationError, assign_speakers, diarize_speakers, estimate_gender_for_speakers
 from transcriber_tool.engines import BaseEngine, build_engine
 from transcriber_tool.media import download_from_url, extract_audio_to_wav, get_duration_seconds, split_audio
 from transcriber_tool.models import ProgressUpdate, TranscriptSegment
@@ -43,6 +44,22 @@ class TranscriptionPipeline:
         self._checkpoint_path(job_name).write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
+
+    def _apply_diarization(self, wav_path: Path, merged: list[TranscriptSegment], progress_cb) -> list[TranscriptSegment]:
+        if not self.config.settings.enable_speaker_diarization:
+            return merged
+
+        progress_cb(ProgressUpdate(percent=96, eta_seconds=None, message="说话人分离中"))
+        speakers = diarize_speakers(wav_path, hf_token=self.config.settings.hf_token)
+        assign_speakers(merged, speakers)
+
+        if self.config.settings.enable_gender_label:
+            progress_cb(ProgressUpdate(percent=98, eta_seconds=None, message="性别标签估计中"))
+            labels = estimate_gender_for_speakers(wav_path, speakers)
+            for seg in merged:
+                if seg.speaker:
+                    seg.gender = labels.get(seg.speaker, "未知")
+        return merged
 
     def run(self, source: str, is_url: bool, progress_cb) -> list[TranscriptSegment]:
         work = self.config.cache_dir / str(int(time.time()))
@@ -113,7 +130,7 @@ class TranscriptionPipeline:
             speed = elapsed_audio / max(0.001, (time.time() - started))
             remaining = max(0.0, total_duration - elapsed_audio)
             eta = remaining / max(speed, 1e-6)
-            percent = 12 + 88 * min(1.0, elapsed_audio / max(total_duration, 1e-6))
+            percent = 12 + 82 * min(1.0, elapsed_audio / max(total_duration, 1e-6))
             progress_cb(
                 ProgressUpdate(
                     percent=percent,
@@ -123,4 +140,9 @@ class TranscriptionPipeline:
             )
 
         merged.sort(key=lambda s: s.start)
+        try:
+            merged = self._apply_diarization(wav_path, merged, progress_cb)
+        except DiarizationError:
+            pass
+
         return merged

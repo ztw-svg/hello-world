@@ -7,13 +7,26 @@ from transcriber_tool.models import TranscriptSegment
 from transcriber_tool.utils import format_timestamp
 
 
+def _role_tag(seg: TranscriptSegment) -> str:
+    tags: list[str] = []
+    if seg.speaker:
+        tags.append(seg.speaker)
+    if seg.gender:
+        tags.append(seg.gender)
+    if not tags:
+        return ""
+    return "[" + "][".join(tags) + "] "
+
+
 def render_lines(segments: list[TranscriptSegment], timestamp_format: str, include_timestamps: bool) -> list[str]:
     lines: list[str] = []
     for seg in segments:
+        role = _role_tag(seg)
+        body = f"{role}{seg.text}".strip()
         if include_timestamps:
-            lines.append(f"{format_timestamp(seg.start, timestamp_format)} {seg.text}")
+            lines.append(f"{format_timestamp(seg.start, timestamp_format)} {body}")
         else:
-            lines.append(seg.text)
+            lines.append(body)
     return lines
 
 

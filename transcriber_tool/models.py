@@ -9,6 +9,8 @@ class TranscriptSegment:
     end: float
     text: str
     confidence: float | None = None
+    speaker: str | None = None
+    gender: str | None = None
 
 
 @dataclass

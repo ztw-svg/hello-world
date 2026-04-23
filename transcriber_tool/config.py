@@ -20,6 +20,9 @@ class Settings:
     device: str = "auto"
     api_base_url: str = "https://api.openai.com/v1"
     api_key: str = ""
+    enable_speaker_diarization: bool = True
+    enable_gender_label: bool = False
+    hf_token: str = ""
 
 
 @dataclass

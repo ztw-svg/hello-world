@@ -9,7 +9,7 @@ from transcriber_tool.config import AppConfig
 from transcriber_tool.exporters import export_docx, export_markdown, export_txt, render_lines
 from transcriber_tool.models import ProgressUpdate, TranscriptSegment
 from transcriber_tool.pipeline import TranscriptionPipeline
-from transcriber_tool.utils import format_timestamp, has_supported_media_ext
+from transcriber_tool.utils import has_supported_media_ext
 
 
 class AppUI:
@@ -32,7 +32,7 @@ class AppUI:
         self.progress_text_var = tk.StringVar(value="进度: 0%")
 
         self._build_layout()
-        self._show_first_run_hint_if_needed()
+        self._show_first_run_hint()
         self._schedule_autosave()
 
     def _build_layout(self) -> None:
@@ -88,19 +88,17 @@ class AppUI:
 
         self.text = tk.Text(edit_frame, undo=True, wrap="word")
         self.text.pack(fill="both", expand=True, padx=8, pady=8)
-        self.text.tag_configure("low_conf", background="#fff1a6")
 
-    def _show_first_run_hint_if_needed(self) -> None:
-        if not self.config.settings_file.exists() or self.config.settings_file.stat().st_size == 0:
-            messagebox.showinfo(
-                "首次使用说明",
-                "1) 选择文件或链接\n2) 点击开始提取\n3) 编辑校正后导出\n\n默认不做内容过滤。",
-            )
+    def _show_first_run_hint(self) -> None:
+        messagebox.showinfo(
+            "首次使用说明",
+            "1) 选择文件或链接\n2) 点击开始提取\n3) 编辑校正后导出\n\n可在设置中开启说话人/性别标签。",
+        )
 
     def show_help(self) -> None:
         messagebox.showinfo(
             "帮助",
-            "支持本地文件和视频链接转录。\n支持 markdown/txt/docx 导出。\n可在设置中切换本地模型或云端 API。",
+            "支持本地文件和视频链接转录。\n支持说话人分离与可选性别标签（实验性）。\n支持 markdown/txt/docx 导出。",
         )
 
     def pick_file(self) -> None:
@@ -117,7 +115,7 @@ class AppUI:
     def open_settings(self) -> None:
         win = tk.Toplevel(self.root)
         win.title("设置")
-        win.geometry("520x320")
+        win.geometry("560x380")
 
         engine_mode = tk.StringVar(value=self.config.settings.engine_mode)
         model_size = tk.StringVar(value=self.config.settings.whisper_model_size)
@@ -125,6 +123,9 @@ class AppUI:
         segment_seconds = tk.StringVar(value=str(self.config.settings.segment_seconds))
         api_base = tk.StringVar(value=self.config.settings.api_base_url)
         api_key = tk.StringVar(value=self.config.settings.api_key)
+        diarization = tk.BooleanVar(value=self.config.settings.enable_speaker_diarization)
+        gender = tk.BooleanVar(value=self.config.settings.enable_gender_label)
+        hf_token = tk.StringVar(value=self.config.settings.hf_token)
 
         form = ttk.Frame(win)
         form.pack(fill="both", expand=True, padx=10, pady=10)
@@ -141,17 +142,26 @@ class AppUI:
         ttk.Label(form, text="切片秒数").grid(row=3, column=0, sticky="w", pady=4)
         ttk.Entry(form, textvariable=segment_seconds, width=26).grid(row=3, column=1, sticky="w")
 
-        ttk.Label(form, text="API Base URL").grid(row=4, column=0, sticky="w", pady=4)
-        ttk.Entry(form, textvariable=api_base, width=38).grid(row=4, column=1, sticky="w")
+        ttk.Checkbutton(form, text="启用说话人分离", variable=diarization).grid(row=4, column=0, columnspan=2, sticky="w", pady=4)
+        ttk.Checkbutton(form, text="启用男女标签（实验性）", variable=gender).grid(row=5, column=0, columnspan=2, sticky="w", pady=4)
 
-        ttk.Label(form, text="API Key").grid(row=5, column=0, sticky="w", pady=4)
-        ttk.Entry(form, textvariable=api_key, width=38, show="*").grid(row=5, column=1, sticky="w")
+        ttk.Label(form, text="HF Token(用于说话人分离)").grid(row=6, column=0, sticky="w", pady=4)
+        ttk.Entry(form, textvariable=hf_token, width=38, show="*").grid(row=6, column=1, sticky="w")
+
+        ttk.Label(form, text="API Base URL").grid(row=7, column=0, sticky="w", pady=4)
+        ttk.Entry(form, textvariable=api_base, width=38).grid(row=7, column=1, sticky="w")
+
+        ttk.Label(form, text="API Key").grid(row=8, column=0, sticky="w", pady=4)
+        ttk.Entry(form, textvariable=api_key, width=38, show="*").grid(row=8, column=1, sticky="w")
 
         def save_settings() -> None:
             self.config.settings.engine_mode = engine_mode.get()
             self.config.settings.whisper_model_size = model_size.get()
             self.config.settings.device = device.get()
             self.config.settings.segment_seconds = max(30, int(segment_seconds.get()))
+            self.config.settings.enable_speaker_diarization = bool(diarization.get())
+            self.config.settings.enable_gender_label = bool(gender.get())
+            self.config.settings.hf_token = hf_token.get().strip()
             self.config.settings.api_base_url = api_base.get().strip()
             self.config.settings.api_key = api_key.get().strip()
             self.config.save()
@@ -159,7 +169,7 @@ class AppUI:
             messagebox.showinfo("设置", "已保存")
             win.destroy()
 
-        ttk.Button(form, text="保存", command=save_settings).grid(row=6, column=1, sticky="e", pady=10)
+        ttk.Button(form, text="保存", command=save_settings).grid(row=9, column=1, sticky="e", pady=10)
 
     def start_transcribe(self) -> None:
         queue: list[str] = []
@@ -186,7 +196,7 @@ class AppUI:
         thread.start()
 
     def _run_queue(self, queue: list[str]) -> None:
-        all_text: list[str] = []
+        all_lines: list[str] = []
         for idx, source in enumerate(queue):
             is_url = source.startswith("http://") or source.startswith("https://")
             if not is_url and not has_supported_media_ext(Path(source)):
@@ -195,10 +205,10 @@ class AppUI:
             self._update_progress(ProgressUpdate(percent=1, eta_seconds=None, message=f"任务 {idx + 1}/{len(queue)}"))
             segments = self.pipeline.run(source=source, is_url=is_url, progress_cb=self._update_progress)
             self.segments = segments
-            text_lines = [f"{format_timestamp(s.start, self.config.settings.timestamp_format)} {s.text}" for s in segments]
-            all_text.append(f"\n===== 来源: {source} =====\n")
-            all_text.extend(text_lines)
-            self._render_text("\n".join(all_text))
+            text_lines = render_lines(segments, self.config.settings.timestamp_format, include_timestamps=True)
+            all_lines.append(f"\n===== 来源: {source} =====")
+            all_lines.extend(text_lines)
+            self._render_text("\n".join(all_lines))
 
         self._update_progress(ProgressUpdate(percent=100, eta_seconds=0, message="全部完成"))
 

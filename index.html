@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>男女对话记事本</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --male: #2f6df6;
+      --female: #e55da5;
+      --text: #243045;
+      --muted: #6b7688;
+      --shadow: 0 10px 30px rgba(36, 48, 69, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      background: linear-gradient(120deg, #f7f8ff, #fef7fb);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .app {
+      width: min(900px, 100%);
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 20px 24px;
+      background: linear-gradient(120deg, #edf2ff, #ffeef7);
+      border-bottom: 1px solid #eef0f7;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 130px 1fr auto auto auto;
+      gap: 12px;
+      padding: 16px 24px;
+      border-bottom: 1px solid #eef0f7;
+      align-items: center;
+    }
+
+    select, input, textarea, button {
+      border: 1px solid #dce3f1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    input, textarea {
+      width: 100%;
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #95adff;
+      box-shadow: 0 0 0 3px rgba(149, 173, 255, 0.2);
+    }
+
+    button {
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .btn-add { background: #3f76ff; }
+    .btn-save { background: #2ab06f; }
+    .btn-export { background: #8b63f6; }
+    .btn-import { background: #f08a24; }
+
+    .editor {
+      padding: 16px 24px;
+      border-bottom: 1px solid #eef0f7;
+    }
+
+    .editor textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .import-panel {
+      display: none;
+      padding: 16px 24px;
+      border-bottom: 1px solid #eef0f7;
+      background: #fffaf3;
+    }
+
+    .import-panel textarea {
+      min-height: 120px;
+      margin-bottom: 10px;
+      resize: vertical;
+    }
+
+    .import-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-run-import { background: #f08a24; }
+    .btn-clear-import { background: #8a94a7; }
+
+    .timeline {
+      list-style: none;
+      padding: 18px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 52vh;
+      overflow-y: auto;
+      background: #fcfdff;
+    }
+
+    .line {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .line .tag {
+      min-width: 60px;
+      text-align: center;
+      color: white;
+      border-radius: 999px;
+      font-size: 12px;
+      padding: 6px 10px;
+      margin-top: 3px;
+    }
+
+    .line.male .tag { background: var(--male); }
+    .line.female .tag { background: var(--female); }
+
+    .line .bubble {
+      flex: 1;
+      background: white;
+      border: 1px solid #e5eaf6;
+      border-radius: 12px;
+      padding: 10px 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 12px 24px 20px;
+    }
+
+    @media (max-width: 760px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>男女对话格式记事本</h1>
+      <p>选择说话人、输入内容后添加。支持本地保存与导出 TXT。</p>
+    </header>
+
+    <section class="toolbar">
+      <select id="speaker">
+        <option value="male">男生</option>
+        <option value="female">女生</option>
+      </select>
+      <input id="title" placeholder="对话标题（可选）" />
+      <button class="btn-add" id="addBtn">添加对话</button>
+      <button class="btn-save" id="saveBtn">保存到本地</button>
+      <button class="btn-export" id="exportBtn">导出 TXT</button>
+      <button class="btn-import" id="toggleImportBtn">粘贴识别</button>
+    </section>
+
+    <section class="editor">
+      <textarea id="content" placeholder="请输入本条对话内容..."></textarea>
+    </section>
+    <section class="import-panel" id="importPanel">
+      <textarea id="importInput" placeholder="支持粘贴多行内容，例如：&#10;男：你今天还好吗？&#10;女：我很好呀&#10;男：晚上一起吃饭吗"></textarea>
+      <div class="import-actions">
+        <button class="btn-run-import" id="runImportBtn">一键识别并追加</button>
+        <button class="btn-clear-import" id="clearImportBtn">清空粘贴区</button>
+      </div>
+    </section>
+
+    <ul id="timeline" class="timeline"></ul>
+    <p class="status" id="status">未保存</p>
+  </main>
+
+  <script>
+    const speakerEl = document.getElementById('speaker');
+    const titleEl = document.getElementById('title');
+    const contentEl = document.getElementById('content');
+    const timelineEl = document.getElementById('timeline');
+    const statusEl = document.getElementById('status');
+    const importPanelEl = document.getElementById('importPanel');
+    const importInputEl = document.getElementById('importInput');
+
+    const STORAGE_KEY = 'dialog_notebook_v1';
+    let entries = [];
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleString('zh-CN', { hour12: false });
+    }
+
+    function render() {
+      timelineEl.innerHTML = '';
+      entries.forEach((item) => {
+        const li = document.createElement('li');
+        li.className = `line ${item.speaker}`;
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = item.speaker === 'male' ? '男生' : '女生';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = item.text;
+        bubble.appendChild(document.createElement('br'));
+        bubble.appendChild(document.createElement('br'));
+        const timeSpan = document.createElement('span');
+        timeSpan.style.color = '#8a95a8';
+        timeSpan.style.fontSize = '12px';
+        timeSpan.textContent = formatTime(item.time);
+        bubble.appendChild(timeSpan);
+        li.appendChild(tag);
+        li.appendChild(bubble);
+        timelineEl.appendChild(li);
+      });
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function addEntry() {
+      const text = contentEl.value.trim();
+      if (!text) {
+        setStatus('请输入对话内容后再添加。');
+        return;
+      }
+
+      entries.push({
+        speaker: speakerEl.value,
+        text,
+        time: Date.now()
+      });
+      contentEl.value = '';
+      render();
+      setStatus('已添加一条对话（记得点“保存到本地”）。');
+    }
+
+    function saveLocal() {
+      const payload = {
+        title: titleEl.value.trim(),
+        entries,
+        savedAt: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      setStatus(`已保存到本地：${formatTime(payload.savedAt)}`);
+    }
+
+    function loadLocal() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const payload = JSON.parse(raw);
+        titleEl.value = payload.title || '';
+        entries = Array.isArray(payload.entries) ? payload.entries : [];
+        render();
+        setStatus(`已加载本地记录：${formatTime(payload.savedAt || Date.now())}`);
+      } catch (e) {
+        setStatus('读取本地记录失败，可能数据已损坏。');
+      }
+    }
+
+    function exportTxt() {
+      const title = titleEl.value.trim() || '未命名对话';
+      const lines = [`标题：${title}`, `导出时间：${formatTime(Date.now())}`, '', '==== 对话内容 ===='];
+      entries.forEach((item, idx) => {
+        const who = item.speaker === 'male' ? '男生' : '女生';
+        lines.push(`${idx + 1}. ${who} [${formatTime(item.time)}]`);
+        lines.push(item.text);
+        lines.push('');
+      });
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${title.replace(/[\\/:*?"<>|]/g, '_')}.txt`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setStatus('已导出 TXT 文件。');
+    }
+
+    function normalizeSpeakerLabel(label) {
+      const normalized = label.toLowerCase().replace(/[\s\[\]（）()]/g, '');
+      const maleSet = ['男', '男生', '男方', 'm', 'male', 'boy', '他'];
+      const femaleSet = ['女', '女生', '女方', 'f', 'female', 'girl', '她'];
+      if (maleSet.includes(normalized)) return 'male';
+      if (femaleSet.includes(normalized)) return 'female';
+      return '';
+    }
+
+    function parseLine(line, lastSpeaker) {
+      const clean = line.trim();
+      if (!clean) return null;
+      const tagged = clean.match(/^([^\s:：]{1,8})\s*[:：]\s*(.+)$/);
+      if (tagged) {
+        const taggedSpeaker = normalizeSpeakerLabel(tagged[1]);
+        if (taggedSpeaker) return { speaker: taggedSpeaker, text: tagged[2].trim() };
+      }
+      const malePrefix = clean.match(/^(男(生)?|male|m|boy|他)\s*[：:\-]\s*(.+)$/i);
+      if (malePrefix) return { speaker: 'male', text: malePrefix[3].trim() };
+      const femalePrefix = clean.match(/^(女(生)?|female|f|girl|她)\s*[：:\-]\s*(.+)$/i);
+      if (femalePrefix) return { speaker: 'female', text: femalePrefix[3].trim() };
+      const speaker = lastSpeaker === 'male' ? 'female' : 'male';
+      return { speaker, text: clean.replace(/^[-*•\d.\s]+/, '').trim() };
+    }
+
+    function importDialogue() {
+      const raw = importInputEl.value.trim();
+      if (!raw) {
+        setStatus('请先粘贴内容，再执行识别。');
+        return;
+      }
+      const lines = raw.split('\n').map(line => line.trim()).filter(Boolean);
+      if (!lines.length) {
+        setStatus('未识别到有效内容。');
+        return;
+      }
+      let lastSpeaker = entries.length ? entries[entries.length - 1].speaker : 'female';
+      const baseTime = Date.now();
+      let added = 0;
+      lines.forEach((line, idx) => {
+        const parsed = parseLine(line, lastSpeaker);
+        if (!parsed || !parsed.text) return;
+        entries.push({
+          speaker: parsed.speaker,
+          text: parsed.text,
+          time: baseTime + idx
+        });
+        lastSpeaker = parsed.speaker;
+        added += 1;
+      });
+      render();
+      setStatus(`识别完成，已追加 ${added} 条对话（请记得保存到本地）。`);
+    }
+
+    document.getElementById('addBtn').addEventListener('click', addEntry);
+    document.getElementById('saveBtn').addEventListener('click', saveLocal);
+    document.getElementById('exportBtn').addEventListener('click', exportTxt);
+    document.getElementById('toggleImportBtn').addEventListener('click', () => {
+      const shown = importPanelEl.style.display === 'block';
+      importPanelEl.style.display = shown ? 'none' : 'block';
+    });
+    document.getElementById('runImportBtn').addEventListener('click', importDialogue);
+    document.getElementById('clearImportBtn').addEventListener('click', () => {
+      importInputEl.value = '';
+      setStatus('已清空粘贴区。');
+    });
+
+    contentEl.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        addEntry();
+      }
+    });
+
+    loadLocal();
+  </script>
+</body>
+</html>
